@@ -41,7 +41,7 @@ namespace AmpelHeinz
             bool greenOn = ampelColorResult == AmpelState.Green || ampelColorResult == AmpelState.AllOn;
 
             Console.WriteLine("Versuche folgende Werte auf die Ampel API auf " + beagleBoardUrl + " zu schreiben: " +
-                "Rot: " + redOn.ToString() + "; Gelb: " + yellowOn.ToString() + "; Grün: " + greenOn.ToString());
+                "Rot: " + redOn.ToString().ToLower() + "; Gelb: " + yellowOn.ToString().ToLower() + "; Grün: " + greenOn.ToString().ToLower());
 
             beagleBoardUrl = beagleBoardUrl + "/?red=" + redOn + "&yellow=" + yellowOn + "&green=" + greenOn;
 
