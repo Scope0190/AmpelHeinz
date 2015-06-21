@@ -18,13 +18,15 @@ namespace AmpelHeinz
         Yellow,
         Green,
         AllOn,
-        Off
+        AllOff
     }
 
     class Program
     {
         static void Main(string[] args)
         {
+            AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
+            Console.CancelKeyPress += Console_CancelKeyPress;
             bool repeat = false;
             if (bool.TryParse(ConfigurationManager.AppSettings["Repeat"], out repeat) && repeat)
             {
@@ -41,6 +43,18 @@ namespace AmpelHeinz
             {
                 doAmpelHeinz();
             }
+        }
+
+        static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
+        {
+            String beagleBoardUrl = ConfigurationManager.AppSettings["BeagleBoardURL"];
+            sendSignalsToBeagleBoard(beagleBoardUrl, false, false, false, AmpelState.AllOff);
+        }
+
+        static void CurrentDomain_ProcessExit(object sender, EventArgs e)
+        {
+            String beagleBoardUrl = ConfigurationManager.AppSettings["BeagleBoardURL"];
+            sendSignalsToBeagleBoard(beagleBoardUrl, false, false, false, AmpelState.AllOff);
         }
 
         private static void doAmpelHeinz()
@@ -61,10 +75,17 @@ namespace AmpelHeinz
             bool yellowOn = ampelColorResult == AmpelState.Yellow || ampelColorResult == AmpelState.AllOn;
             bool greenOn = ampelColorResult == AmpelState.Green || ampelColorResult == AmpelState.AllOn;
 
-            Console.WriteLine("Versuche folgende Werte auf die Ampel API auf " + beagleBoardUrl + " zu schreiben: " +
-                "Rot: " + redOn.ToString().ToLower() + "; Gelb: " + yellowOn.ToString().ToLower() + "; Grün: " + greenOn.ToString().ToLower());
+            sendSignalsToBeagleBoard(beagleBoardUrl, redOn, yellowOn, greenOn, ampelColorResult);
 
-            beagleBoardUrl = beagleBoardUrl + "/?red=" + redOn + "&yellow=" + yellowOn + "&green=" + greenOn;
+            Console.WriteLine("Ampel-Heinz " + ampelHeinzVersionString + " beendet");
+        }
+
+        private static void sendSignalsToBeagleBoard(String beagleBoardUrl, bool redOn, bool yellowOn, bool greenOn, AmpelState ampelColorResult)
+        {
+            Console.WriteLine("Versuche folgende Werte auf die Ampel API auf " + beagleBoardUrl + " zu schreiben: " +
+               "Rot: " + redOn.ToString().ToLower() + "; Gelb: " + yellowOn.ToString().ToLower() + "; Grün: " + greenOn.ToString().ToLower());
+
+            beagleBoardUrl = beagleBoardUrl + "/?red=" + redOn.ToString().ToLower() + "&yellow=" + yellowOn.ToString().ToLower() + "&green=" + greenOn.ToString().ToLower();
 
 
             try
@@ -81,7 +102,6 @@ namespace AmpelHeinz
             {
                 Console.WriteLine("Fehler beim Schreiben des Ampelstatus auf " + beagleBoardUrl + ":\r\n" + e);
             }
-            Console.WriteLine("Ampel-Heinz " + ampelHeinzVersionString + " beendet");
         }
 
         /// <summary>
@@ -100,7 +120,7 @@ namespace AmpelHeinz
         /// <returns></returns>
         static AmpelState GetState(string buildServerUrl, String[] jobNames)
         {
-            AmpelState stateResult = AmpelState.Off;
+            AmpelState stateResult = AmpelState.AllOff;
 
             Console.WriteLine("Versuche XML Daten vom Buildserver \"" + buildServerUrl + "\" zu lesen");
             XmlDocument xd = new XmlDocument();
