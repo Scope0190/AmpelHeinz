@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
@@ -24,7 +25,27 @@ namespace AmpelHeinz
     {
         static void Main(string[] args)
         {
-            String ampelHeinzVersionString = "0.9";
+            bool repeat = false;
+            if (bool.TryParse(ConfigurationManager.AppSettings["Repeat"], out repeat) && repeat)
+            {
+                int delay = 0;
+                int.TryParse(ConfigurationManager.AppSettings["DelayBetweenRunsInMS"], out delay);
+                while (true)
+                {
+                    doAmpelHeinz();
+                    Console.WriteLine("Warte " + delay.ToString() + " ms bis zum nächsten Start von Ampel-Heinz");
+                    Thread.Sleep(delay);
+                }
+            }
+            else
+            {
+                doAmpelHeinz();
+            }
+        }
+
+        private static void doAmpelHeinz()
+        {
+            String ampelHeinzVersionString = "0.99";
             String[] jobNames = ConfigurationManager.AppSettings["JobNames"].Split(',');
             String buildServerURL = ConfigurationManager.AppSettings["BuildServerURL"];
             String beagleBoardUrl = ConfigurationManager.AppSettings["BeagleBoardURL"];
@@ -111,8 +132,7 @@ namespace AmpelHeinz
                 bool containsAnime = jobNodes.ToList().Any(jn => jn.EndsWith("anime"));
                 bool allBlue = jobNodes.ToList().All(jn => jn == "blue");
 
-                //höchste Prio
-                if (containsAnime)
+                if (containsAnime) //höchste Prio
                 {
                     stateResult = AmpelState.Yellow;
                 }
